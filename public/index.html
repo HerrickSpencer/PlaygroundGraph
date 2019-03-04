@@ -147,10 +147,10 @@
             var graphEndpoint = "https://graph.microsoft.com/v1.0/me";
 
             fetch(graphEndpoint, options)
-                .then( response => {
+                .then( function (response){
                     response.json()
-                    .then(data => ({status: response.status, body: data}))
-                    .then(obj => updateUI(obj.body.displayName));
+                    .then( function (data) {return ({status: response.status, body: data})})
+                    .then(function (obj){updateUI(obj.body.displayName);});
             });
 
             // Alternate way to get json string of response
