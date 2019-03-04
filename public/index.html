@@ -7,43 +7,84 @@
     <script>
         var userAgentApplication;
         var applicationConfig = {
-                clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7'
+                clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7',
+                graphScopes: ["user.read", "mail.send"]
             };
         
         window.onload = (e) => {
-            Login(); return;
-            url = window.location.hash.substr(1); //current page url
-            tokens = url.split('='); 
-            tokenHash = tokens[1]; 
-
-            if (tokenHash)
-                console.log("Have token! " + tokenHash);
-
+            //Login(); return; //Comment for redirect path
 
             this.userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
                  { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
 
+            if (userAgentApplication.getUser() && !userAgentApplication.isCallback(window.location.hash)) {// avoid duplicate code execution on page load in case of iframe and popup window.
+                console.log("successfull ID login");
+                acquireTokenRedirectAndCallMSGraph();
+            }
+
+            // url = window.location.hash.substr(1); //current page url
+            // tokens = url.split('='); 
+            // tokenHash = tokens[1]; 
+
+
+            // if (tokenHash)
+            // {
+            //     console.log("Have token! " + tokenHash);
+            //     graphTokenReceivedCallback("", tokenHash, "", "", "");
+            // }
+
         };
 
         //callback function for redirect flows
-        function tokenReceivedCallback(errorDesc, token, error, tokenType) {
+        function tokenReceivedCallback(errorDesc, token, error, tokenType, status) {
             if (token) {
                 //Login Success
-                console.info("Logged it!!!");
+                console.info("Logged it!!!" + status + " token type: " + tokenType);
 
-                this.userAgentApplication.acquireTokenSilent(graphScopes).then(function (accessToken) {
-                    updateUI("AcquireTokenSilent success");
-                    GetGraphItem(accessToken);
-                    console.log("AcquireTokenSilent Success");
-                }, function (error) {
-                    //AcquireTokenSilent Failure, send an interactive request.
-                        console.log(error);
-                        updateUI("AcquireTokenSilent request Failure");
-                });
+                // if (tokenType === "id_token")
+                // {
+                //     console.log("Attempting graph token aquire");
+                //     this.userAgentApplication.acquireTokenRedirect(applicationConfig.graphScopes, null, graphTokenReceivedCallback);
+                //     // this.userAgentApplication.acquireTokenRedirect(applicationConfig.graphScopes).then(function (accessToken) {
+                //     //     updateUI("AcquireTokenSilent Failure, interactive request success");
+                //     //     GetGraphItem(accessToken);
+                //     // }, function (error) {
+                //     //     updateUI("AcquireTokenSilent and interactive request Failure");
+                //     //     console.log(error);
+                //     // });
+                // }
+                // else
+                // {
+                //     console.log("Other token returned " + tokenType);
+                // }
+
 
             }
             else {
                 log(error + ":" + errorDesc);
+            }
+        }
+
+        function acquireTokenRedirectAndCallMSGraph() {
+            //Call acquireTokenSilent (iframe) to obtain a token for Microsoft Graph
+            userAgentApplication.acquireTokenSilent(applicationConfig.graphScopes).then(function (accessToken) {
+                //callMSGraph(applicationConfig.graphEndpoint, accessToken, graphAPICallback);
+                GetGraphItem(accessToken);
+            }, function (error) {
+                console.log(error);
+                //Call acquireTokenRedirect in case of acquireToken Failure
+                if (error.indexOf("consent_required") !== -1 || error.indexOf("interaction_required") !== -1 || error.indexOf("login_required") !== -1) {
+                    userAgentApplication.acquireTokenRedirect(applicationConfig.graphScopes);
+                }
+            });
+        }
+
+        function acquireTokenRedirectCallBack(errorDesc, token, error, tokenType) {
+            if (tokenType === "access_token") {
+                //callMSGraph(applicationConfig.graphEndpoint, token, graphAPICallback);
+                GetGraphItem(token);
+            } else {
+                console.log("token type is:"+tokenType);
             }
         }
 
@@ -54,8 +95,7 @@
             // var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
             //      { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
 
-            var graphScopes = ["user.read", "mail.send"];
-            this.userAgentApplication.loginRedirect(graphScopes);
+            this.userAgentApplication.loginRedirect(applicationConfig.graphScopes);
         }
 
         function Login()
@@ -66,18 +106,17 @@
 
             var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback);
 
-            var graphScopes = ["user.read", "mail.send"];
-            userAgentApplication.loginPopup(graphScopes).then(function (idToken) {
+            userAgentApplication.loginPopup(applicationConfig.graphScopes).then(function (idToken) {
                 console.log("Login Success!");
 
                 //Login Success
-                userAgentApplication.acquireTokenSilent(graphScopes).then(function (accessToken) {
+                userAgentApplication.acquireTokenSilent(applicationConfig.graphScopes).then(function (accessToken) {
                     updateUI("AcquireTokenSilent success");
                     GetGraphItem(accessToken);
                     console.log("AcquireTokenSilent Success");
                 }, function (error) {
                     //AcquireTokenSilent Failure, send an interactive request.
-                    userAgentApplication.acquireTokenPopup(graphScopes).then(function (accessToken) {
+                    userAgentApplication.acquireTokenPopup(applicationConfig.graphScopes).then(function (accessToken) {
                         updateUI("AcquireTokenSilent Failure, interactive request success");
                         GetGraphItem(accessToken);
                     }, function (error) {
