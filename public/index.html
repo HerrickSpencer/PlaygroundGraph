@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.4/js/msal.js"></script>
+    <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.4/js/msal.min.js"></script>
+    <script>
+        var userAgentApplication;
+        var applicationConfig = {
+                clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7'
+            };
+        
+        window.onload = (e) => {
+            Login(); return;
+            url = window.location.hash.substr(1); //current page url
+            tokens = url.split('='); 
+            tokenHash = tokens[1]; 
+
+            if (tokenHash)
+                console.log("Have token! " + tokenHash);
+
+
+            this.userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
+                 { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
+
+        };
+
+        //callback function for redirect flows
+        function tokenReceivedCallback(errorDesc, token, error, tokenType) {
+            if (token) {
+                //Login Success
+                console.info("Logged it!!!");
+
+                this.userAgentApplication.acquireTokenSilent(graphScopes).then(function (accessToken) {
+                    updateUI("AcquireTokenSilent success");
+                    GetGraphItem(accessToken);
+                    console.log("AcquireTokenSilent Success");
+                }, function (error) {
+                    //AcquireTokenSilent Failure, send an interactive request.
+                        console.log(error);
+                        updateUI("AcquireTokenSilent request Failure");
+                });
+
+            }
+            else {
+                log(error + ":" + errorDesc);
+            }
+        }
+
+        function LoginOnPage()
+        {
+            console.log("Logging in");
+
+            // var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
+            //      { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
+
+            var graphScopes = ["user.read", "mail.send"];
+            this.userAgentApplication.loginRedirect(graphScopes);
+        }
+
+        function Login()
+        {
+            var applicationConfig = {
+                clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7'
+            };
+
+            var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback);
+
+            var graphScopes = ["user.read", "mail.send"];
+            userAgentApplication.loginPopup(graphScopes).then(function (idToken) {
+                console.log("Login Success!");
+
+                //Login Success
+                userAgentApplication.acquireTokenSilent(graphScopes).then(function (accessToken) {
+                    updateUI("AcquireTokenSilent success");
+                    GetGraphItem(accessToken);
+                    console.log("AcquireTokenSilent Success");
+                }, function (error) {
+                    //AcquireTokenSilent Failure, send an interactive request.
+                    userAgentApplication.acquireTokenPopup(graphScopes).then(function (accessToken) {
+                        updateUI("AcquireTokenSilent Failure, interactive request success");
+                        GetGraphItem(accessToken);
+                    }, function (error) {
+                        updateUI("AcquireTokenSilent and interactive request Failure");
+                        console.log(error);
+                    });
+                })
+            }, function (error) {
+                //login failure
+                console.log(error);
+            });
+        }
+
+        function updateUI(message)
+        {
+            document.getElementById("messages").innerText = message;
+        }
+
+        function GetGraphItem(token)
+        {
+            var headers = new Headers();
+            var bearer = "Bearer " + token;
+            headers.append("Authorization", bearer);
+            var options = {
+                method: "GET",
+                headers: headers
+            };
+            var graphEndpoint = "https://graph.microsoft.com/v1.0/me";
+
+            fetch(graphEndpoint, options)
+                .then( response => {
+                    response.json()
+                    .then(data => ({status: response.status, body: data}))
+                    .then(obj => updateUI(obj.body.displayName));
+            });
+
+            // Alternate way to get json string of response
+            // fetch(graphEndpoint, options)
+            // .then( response => {
+            //     response.text()
+            //     .then(obj => updateUI(obj));
+            // });
+        }
+    </script>
+</head>
+<body>
+    <h1>HELLO</h1>
+    <div id="messages">No message</div>
+    <button onclick="LoginOnPage();">TEST LOGIN</button>
+
+</body>
+</html>
