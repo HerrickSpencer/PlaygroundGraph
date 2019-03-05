@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/7.2.5/polyfill.min.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.4/js/msal.js"></script>
     <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.4/js/msal.min.js"></script>
     <script>
-        var userAgentApplication;
         var applicationConfig = {
                 clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7',
                 graphScopes: ["user.read", "mail.send"]
             };
         
-        window.onload = (e) => {
-            //Login(); return; //Comment for redirect path
-
-            this.userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
+        var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
                  { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
+
+        window.document.onload = function (e) {
+            //Login(); return; //Comment for redirect path
 
             if (userAgentApplication.getUser() && !userAgentApplication.isCallback(window.location.hash)) {// avoid duplicate code execution on page load in case of iframe and popup window.
                 console.log("successfull ID login");
@@ -95,7 +95,7 @@
             // var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
             //      { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
 
-            this.userAgentApplication.loginRedirect(applicationConfig.graphScopes);
+            userAgentApplication.loginRedirect(applicationConfig.graphScopes);
         }
 
         function Login()
