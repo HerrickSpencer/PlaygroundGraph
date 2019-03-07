@@ -1,164 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-polyfill/7.2.5/polyfill.min.js"></script>
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.4/js/msal.js"></script>
-    <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.4/js/msal.min.js"></script>
+    <script type="text/javascript" src="https://js.live.net/v7.2/OneDrive.js"></script>
     <script>
-        var applicationConfig = {
-                clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7',
-                graphScopes: ["user.read", "mail.send"]
-            };
-        
-        var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
-                 { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
-
-        window.document.onload = function (e) {
-            //Login(); return; //Comment for redirect path
-
-            if (userAgentApplication.getUser() && !userAgentApplication.isCallback(window.location.hash)) {// avoid duplicate code execution on page load in case of iframe and popup window.
-                console.log("successfull ID login");
-                acquireTokenRedirectAndCallMSGraph();
-            }
-
-            // url = window.location.hash.substr(1); //current page url
-            // tokens = url.split('='); 
-            // tokenHash = tokens[1]; 
-
-
-            // if (tokenHash)
-            // {
-            //     console.log("Have token! " + tokenHash);
-            //     graphTokenReceivedCallback("", tokenHash, "", "", "");
-            // }
-
-        };
-
-        //callback function for redirect flows
-        function tokenReceivedCallback(errorDesc, token, error, tokenType, status) {
-            if (token) {
-                //Login Success
-                console.info("Logged it!!!" + status + " token type: " + tokenType);
-
-                // if (tokenType === "id_token")
-                // {
-                //     console.log("Attempting graph token aquire");
-                //     this.userAgentApplication.acquireTokenRedirect(applicationConfig.graphScopes, null, graphTokenReceivedCallback);
-                //     // this.userAgentApplication.acquireTokenRedirect(applicationConfig.graphScopes).then(function (accessToken) {
-                //     //     updateUI("AcquireTokenSilent Failure, interactive request success");
-                //     //     GetGraphItem(accessToken);
-                //     // }, function (error) {
-                //     //     updateUI("AcquireTokenSilent and interactive request Failure");
-                //     //     console.log(error);
-                //     // });
-                // }
-                // else
-                // {
-                //     console.log("Other token returned " + tokenType);
-                // }
-
-
-            }
-            else {
-                log(error + ":" + errorDesc);
-            }
-        }
-
-        function acquireTokenRedirectAndCallMSGraph() {
-            //Call acquireTokenSilent (iframe) to obtain a token for Microsoft Graph
-            userAgentApplication.acquireTokenSilent(applicationConfig.graphScopes).then(function (accessToken) {
-                //callMSGraph(applicationConfig.graphEndpoint, accessToken, graphAPICallback);
-                GetGraphItem(accessToken);
-            }, function (error) {
-                console.log(error);
-                //Call acquireTokenRedirect in case of acquireToken Failure
-                if (error.indexOf("consent_required") !== -1 || error.indexOf("interaction_required") !== -1 || error.indexOf("login_required") !== -1) {
-                    userAgentApplication.acquireTokenRedirect(applicationConfig.graphScopes);
-                }
-            });
-        }
-
-        function acquireTokenRedirectCallBack(errorDesc, token, error, tokenType) {
-            if (tokenType === "access_token") {
-                //callMSGraph(applicationConfig.graphEndpoint, token, graphAPICallback);
-                GetGraphItem(token);
-            } else {
-                console.log("token type is:"+tokenType);
-            }
-        }
-
-        function LoginOnPage()
-        {
-            console.log("Logging in");
-
-            // var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback,
-            //      { cacheLocation: 'localStorage', storeAuthStateInCookie: true , state:"12345"});// cacheLocation defaults to sessionStorage if not set in the constructor
-
-            userAgentApplication.loginRedirect(applicationConfig.graphScopes);
-        }
-
-        function Login()
-        {
             var applicationConfig = {
-                clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7'
-            };
-
-            var userAgentApplication = new Msal.UserAgentApplication(applicationConfig.clientID, null, tokenReceivedCallback);
-
-            userAgentApplication.loginPopup(applicationConfig.graphScopes).then(function (idToken) {
-                console.log("Login Success!");
-
-                //Login Success
-                userAgentApplication.acquireTokenSilent(applicationConfig.graphScopes).then(function (accessToken) {
-                    updateUI("AcquireTokenSilent success");
-                    GetGraphItem(accessToken);
-                    console.log("AcquireTokenSilent Success");
-                }, function (error) {
-                    //AcquireTokenSilent Failure, send an interactive request.
-                    userAgentApplication.acquireTokenPopup(applicationConfig.graphScopes).then(function (accessToken) {
-                        updateUI("AcquireTokenSilent Failure, interactive request success");
-                        GetGraphItem(accessToken);
-                    }, function (error) {
-                        updateUI("AcquireTokenSilent and interactive request Failure");
-                        console.log(error);
-                    });
-                })
-            }, function (error) {
-                //login failure
-                console.log(error);
-            });
+            clientID: 'a5d6bc05-6aac-4695-bbc3-64794f108dd7',
+            graphScopes: ["user.read", "files.read", "mail.send"]
+        };
+    </script>
+    <script type="text/javascript">
+        var odOptions = {
+            clientId: applicationConfig.clientID,
+            action: "query",
+            multiSelect: true,
+            advanced: {
+                endpointHint: "api.onedrive.com",
+                queryParameters: "select=id,name,size,file,folder,photo,@microsoft.graph.downloadUrl",
+                filter: "folder,.png" /* display folder and files with extension '.png' only */
+            },
+            success: function(files) { alert("success handler") },
+            cancel: function() { alert("cancel handler") },
+            error: function(e) { alert("error handler") }
         }
+
+        function launchOneDrivePicker(){
+            OneDrive.open(odOptions);
+        }
+    </script>
+    <script>
+    
+        window.document.onload = function (e) {
+        };
 
         function updateUI(message)
         {
             document.getElementById("messages").innerText = message;
-        }
-
-        function GetGraphItem(token)
-        {
-            var headers = new Headers();
-            var bearer = "Bearer " + token;
-            headers.append("Authorization", bearer);
-            var options = {
-                method: "GET",
-                headers: headers
-            };
-            var graphEndpoint = "https://graph.microsoft.com/v1.0/me";
-
-            fetch(graphEndpoint, options)
-                .then( function (response){
-                    response.json()
-                    .then( function (data) {return ({status: response.status, body: data})})
-                    .then(function (obj){updateUI(obj.body.displayName);});
-            });
-
-            // Alternate way to get json string of response
-            // fetch(graphEndpoint, options)
-            // .then( response => {
-            //     response.text()
-            //     .then(obj => updateUI(obj));
-            // });
         }
     </script>
 </head>
@@ -166,6 +42,7 @@
     <h1>HELLO</h1>
     <div id="messages">No message</div>
     <button onclick="LoginOnPage();">TEST LOGIN</button>
+    <button onClick="launchOneDrivePicker()">Open from OneDrive</button>
 
 </body>
 </html>
